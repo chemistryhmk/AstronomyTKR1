@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="uk" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Місія: Космічна Одісея — Тематична Контрольна Робота з Астрономії</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        space: {
+                            950: '#030712',
+                            900: '#0b1329',
+                            800: '#111c3a',
+                            700: '#1a2b56',
+                            card: 'rgba(11, 19, 41, 0.94)',
+                            gold: '#fbbf24',
+                            cyan: '#38bdf8',
+                            purple: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2pdf.js Library for Exporting PDF Reports -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f1f5f9;
+            overflow-x: hidden;
+            user-select: none;
+        }
+        canvas#starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(11, 19, 41, 0.94);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: 0 10px 30px 0 rgba(0, 0, 0, 0.7);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+        }
+        .flight-path {
+            stroke-dasharray: 8 8;
+            animation: dash 30s linear infinite;
+        }
+        @keyframes dash {
+            to { stroke-dashoffset: -1000; }
+        }
+        #spaceship-icon {
+            transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .option-card {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-card:hover {
+            border-color: rgba(56, 189, 248, 0.8);
+            transform: translateY(-1px);
+            background: rgba(30, 58, 138, 0.35);
+        }
+        .mode-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .mode-card.active {
+            border-color: #38bdf8;
+            background: rgba(14, 165, 233, 0.18);
+            box-shadow: 0 0 12px rgba(56, 189, 248, 0.3);
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between relative text-slate-100">
+
+    <!-- Dynamic Canvas Background -->
+    <canvas id="starfield"></canvas>
+
+    <div class="relative z-10 min-h-screen flex flex-col justify-between py-2 px-3 md:px-6">
+        
+        <!-- Header -->
+        <header class="w-full glass-panel border-b border-slate-800 px-4 py-2.5 rounded-xl mb-3 sticky top-0 z-50">
+            <div class="w-full max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-2">
+                <div class="flex items-center gap-2.5">
+                    <div class="bg-cyan-500/20 p-2 rounded-lg border border-cyan-400/40 text-cyan-400">
+                        <i class="fa-solid fa-rocket text-lg animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base md:text-xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-200 to-indigo-400">
+                            МІСІЯ: КОСМІЧНА ОДІСЕЯ
+                        </h1>
+                        <p class="text-[11px] md:text-xs text-slate-400">Тематична контрольна робота з астрономії (Теми 1–3) • II курс коледжу</p>
+                    </div>
+                </div>
+
+                <!-- User Dynamic Status -->
+                <div id="header-user-badge" class="hidden flex items-center gap-3 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-700/80">
+                    <div class="text-right">
+                        <span id="user-display-name" class="block font-bold text-xs md:text-sm text-cyan-300">Пілот</span>
+                        <span id="user-display-group" class="block text-[10px] md:text-xs text-slate-400">Група: -</span>
+                    </div>
+                    <div class="h-6 w-px bg-slate-700"></div>
+                    <div class="text-center">
+                        <span class="block text-[9px] uppercase tracking-wider text-slate-400">Накопичено</span>
+                        <span id="current-score" class="text-sm md:text-base font-black text-amber-400">0 / 120</span>
+                    </div>
+                    <div id="mode-pill-badge" class="hidden text-[9px] uppercase px-2 py-0.5 rounded font-bold border">
+                        СТАНДАРТ
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Screen Container -->
+        <main class="w-full max-w-7xl mx-auto my-auto flex-grow flex flex-col justify-center">
+
+            <!-- STAGE 1: BRIEFING & REGISTRATION -->
+            <section id="screen-registration" class="w-full glass-panel p-4 md:p-6 rounded-2xl space-y-4 my-auto">
+                <div class="text-center max-w-3xl mx-auto space-y-1">
+                    <div class="inline-block p-2.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-1 glow-cyan">
+                        <i class="fa-solid fa-user-astronaut text-2xl md:text-3xl"></i>
+                    </div>
+                    <h2 class="text-xl md:text-3xl font-black text-white">Реєстрація Пілота & Стартовий Брифінг</h2>
+                    <p class="text-xs text-slate-300">
+                        Ознайомтеся з правилами контрольної роботи та введіть персональні дані для формування звіту.
+                    </p>
+                </div>
+
+                <!-- Instructions Box -->
+                <div class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700 space-y-2 text-xs text-slate-300">
+                    <div class="font-bold text-cyan-300 flex items-center gap-2 text-xs md:text-sm border-b border-slate-800 pb-1.5">
+                        <i class="fa-solid fa-clipboard-list text-cyan-400"></i> Інструктаж проведення контрольної роботи (протягом всього навчального заняття):
+                    </div>
+                    <ul class="space-y-1 list-disc list-inside text-slate-300 text-[11px] md:text-xs">
+                        <li>Робота складається з <strong>4 космічних модулів</strong> (до 30 балів за кожен модуль).</li>
+                        <li>Максимальна накопичувальна кількість балів: <strong>120 балів</strong>.</li>
+                        <li>Підсумкова оцінка за 12-бальною системою обчислюється автоматично: <code class="text-amber-300 bg-slate-800 px-1 py-0.5 rounded font-mono">Оцінка = Округлення(Бали / 10)</code>.</li>
+                        <li>Результати <strong>автоматично надсилаються у Google Таблицю викладача</strong> під час фінішу.</li>
+                        <li>По завершенні ви зможете <strong>завантажити офіційний PDF-звіт</strong> для прикріплення у Google Classroom.</li>
+                    </ul>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Personal Data -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Прізвище та Ім'я (ПІБ)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                                    <i class="fa-solid fa-id-card"></i>
+                                </span>
+                                <input type="text" id="input-fullname" placeholder="напр., Шевченко Богдан"
+                                    class="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none text-slate-100 placeholder-slate-500 text-xs md:text-sm">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300 mb-1">Навчальна група (II курс)</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs">
+                                    <i class="fa-solid fa-graduation-cap"></i>
+                                </span>
+                                <select id="input-group" class="w-full pl-9 pr-3 py-2 bg-slate-900/90 border border-slate-700 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:outline-none text-slate-100 text-xs md:text-sm">
+                                    <option value="" disabled selected>Оберіть вашу групу...</option>
+                                    <option value="ВД-201">ВД-201</option>
+                                    <option value="ТЗТ-201">ТЗТ-201</option>
+                                    <option value="ЗВ-201">ЗВ-201</option>
+                                    <option value="МЕП-201">МЕП-201</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Mode Selection -->
+                    <div class="space-y-2">
+                        <label class="block text-[11px] font-semibold uppercase tracking-wider text-slate-300">Оберіть режим виконання місії:</label>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <!-- Standard Mode -->
+                            <div id="mode-card-standard" onclick="selectGameMode('standard')" class="mode-card active p-3 rounded-xl border border-slate-700 bg-slate-900/80 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs md:text-sm text-cyan-300 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-compass text-sm"></i> Стандартний (Академічний)
+                                    </span>
+                                    <i id="radio-icon-standard" class="fa-solid fa-circle-dot text-cyan-400 text-sm"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300 leading-normal">
+                                    Впевнене розмірковане виконання завдань протягом всього заняття. Таймери відсутні.
+                                </p>
+                            </div>
+
+                            <!-- Time Attack Mode -->
+                            <div id="mode-card-timeattack" onclick="selectGameMode('timeattack')" class="mode-card p-3 rounded-xl border border-slate-700 bg-slate-900/80 space-y-1">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold text-xs md:text-sm text-amber-400 flex items-center gap-1.5">
+                                        <i class="fa-solid fa-stopwatch text-sm"></i> Тайм-атак (Time-Attack)
+                                    </span>
+                                    <i id="radio-icon-timeattack" class="fa-regular fa-circle text-slate-500 text-sm"></i>
+                                </div>
+                                <p class="text-[11px] text-slate-300 leading-normal">
+                                    Режим азарту! На модуль відводиться 90 с. За швидкість нараховуються бонусні бали.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" onclick="startMission()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 font-extrabold text-white shadow-lg glow-cyan transition-all transform active:scale-98 flex items-center justify-center gap-2 text-sm md:text-base">
+                        <span>РОЗПОЧАТИ МІСІЮ ТА ЗАПУСТИТИ ДВИГУНИ</span>
+                        <i class="fa-solid fa-paper-plane text-sm"></i>
+                    </button>
+                </div>
+
+                <div class="pt-1 text-center">
+                    <button type="button" onclick="toggleLeaderboardModal(true)" class="text-xs text-cyan-400 hover:underline inline-flex items-center gap-1.5">
+                        <i class="fa-solid fa-trophy text-amber-400"></i> Переглянути Локальний Рейтинг Переможців
+                    </button>
+                </div>
+            </section>
+
+            <!-- STAGE 2: MAP & QUESTION SCREEN -->
+            <div id="screen-game" class="hidden flex flex-col gap-3 w-full my-auto">
+
+                <!-- Flight Map Card -->
+                <div class="glass-panel p-3 rounded-xl relative overflow-hidden">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[10px] uppercase font-bold text-cyan-400 tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-map-location-dot"></i> Бортова Траєкторія Польоту
+                        </span>
+                        <span id="current-station-title" class="text-[11px] text-slate-200 font-semibold bg-slate-900/90 px-3 py-1 rounded-full border border-slate-700">
+                            Локація: Старт
+                        </span>
+                    </div>
+
+                    <!-- SVG Map Compact -->
+                    <div class="w-full overflow-x-auto">
+                        <svg id="svg-map" viewBox="0 0 900 110" class="w-full min-w-[650px] h-auto">
+                            <!-- Curved Background Track -->
+                            <path d="M 50,55 Q 220,15 450,55 T 850,55" fill="none" stroke="#1e293b" stroke-width="5" />
+                            <path d="M 50,55 Q 220,15 450,55 T 850,55" fill="none" stroke="#38bdf8" stroke-width="2.5" class="flight-path" opacity="0.6" />
+
+                            <!-- Station 0: Start -->
+                            <g transform="translate(50,55)">
+                                <circle r="14" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5" />
+                                <text y="-18" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="600">Старт</text>
+                            </g>
+
+                            <!-- Station 1 -->
+                            <g transform="translate(230,35)">
+                                <circle id="st-circle-1" r="13" fill="#0f172a" stroke="#64748b" stroke-width="2.5" />
+                                <text y="-16" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="600">Модуль 1</text>
+                            </g>
+
+                            <!-- Station 2 -->
+                            <g transform="translate(430,55)">
+                                <circle id="st-circle-2" r="13" fill="#0f172a" stroke="#64748b" stroke-width="2.5" />
+                                <text y="-16" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="600">Модуль 2</text>
+                            </g>
+
+                            <!-- Station 3 -->
+                            <g transform="translate(630,75)">
+                                <circle id="st-circle-3" r="13" fill="#0f172a" stroke="#64748b" stroke-width="2.5" />
+                                <text y="-16" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="600">Модуль 3</text>
+                            </g>
+
+                            <!-- Station 4 -->
+                            <g transform="translate(740,40)">
+                                <circle id="st-circle-4" r="13" fill="#0f172a" stroke="#64748b" stroke-width="2.5" />
+                                <text y="-16" text-anchor="middle" fill="#cbd5e1" font-size="10" font-weight="600">Модуль 4</text>
+                            </g>
+
+                            <!-- Station 5: Earth -->
+                            <g transform="translate(850,55)">
+                                <circle id="st-circle-5" r="16" fill="#0f172a" stroke="#22c55e" stroke-width="2.5" />
+                                <text y="-20" text-anchor="middle" fill="#4ade80" font-size="10" font-weight="bold">Земля</text>
+                            </g>
+
+                            <!-- Spaceship Marker -->
+                            <g id="spaceship-icon" transform="translate(50,55)">
+                                <circle r="12" fill="#38bdf8" opacity="0.3" class="animate-ping" />
+                                <polygon points="-7,-5 8,0 -7,5 -3,0" fill="#38bdf8" stroke="#ffffff" stroke-width="1.2" />
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Module Box with Step-by-Step Question Pages -->
+                <div class="glass-panel p-4 rounded-xl relative space-y-3">
+                    <div class="flex flex-wrap justify-between items-center gap-2 border-b border-slate-800 pb-2.5">
+                        <div>
+                            <span id="module-badge" class="px-2.5 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 uppercase tracking-wider">
+                                МОДУЛЬ 1 / 4
+                            </span>
+                            <h3 id="module-title" class="text-base md:text-lg font-extrabold text-white mt-0.5">Назва Модуля</h3>
+                        </div>
+
+                        <!-- Timer Widget -->
+                        <div id="timer-box" class="hidden flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 px-3 py-1 rounded-lg text-amber-400 text-xs">
+                            <i class="fa-solid fa-hourglass-half animate-spin"></i>
+                            <span class="font-semibold">Таймер:</span>
+                            <span id="timer-seconds" class="font-black">90</span> с
+                        </div>
+
+                        <!-- Progress indicator -->
+                        <div class="text-right">
+                            <span id="question-step-indicator" class="text-xs font-bold text-cyan-300 block">Питання 1 з 3</span>
+                            <span class="text-[10px] text-slate-400">Накопичення за модуль: до 30 балів</span>
+                        </div>
+                    </div>
+
+                    <!-- Step Progress Bar -->
+                    <div class="w-full bg-slate-900 rounded-full h-1.5 border border-slate-800">
+                        <div id="question-progress-bar" class="bg-gradient-to-r from-cyan-400 to-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: 33%"></div>
+                    </div>
+
+                    <!-- Dynamic Single Question Container -->
+                    <div id="question-step-container" class="min-h-[160px] flex flex-col justify-center">
+                        <!-- Current active question page rendered dynamically -->
+                    </div>
+
+                    <!-- Question Step Navigation Buttons -->
+                    <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                        <button id="btn-prev-question" onclick="navigateQuestionStep(-1)" class="py-2 px-4 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span>Попереднє питання</span>
+                        </button>
+
+                        <button id="btn-next-question" onclick="navigateQuestionStep(1)" class="py-2.5 px-6 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg glow-cyan transition-all transform active:scale-95 flex items-center gap-1.5">
+                            <span id="btn-next-text">Наступне питання</span>
+                            <i id="btn-next-icon" class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STAGE 3: RESULTS & PDF CERTIFICATE EXPORT -->
+            <section id="screen-results" class="hidden space-y-4 w-full my-auto">
+                
+                <div class="glass-panel p-5 md:p-8 rounded-2xl text-center space-y-4 bg-slate-900 border border-cyan-500/40">
+                    <div class="border-b border-slate-800 pb-3 flex flex-wrap justify-between items-center text-left gap-2">
+                        <div>
+                            <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest">Офіційний Бортовий Звіт Місії</span>
+                            <h2 class="text-base md:text-xl font-black text-white">Харківський машинобудівний фаховий коледж</h2>
+                            <p class="text-xs text-slate-400">Контрольна робота з предмета «Астрономія» (Теми 1–3) • II курс</p>
+                        </div>
+                        <div class="text-right">
+                            <span id="pdf-report-date" class="text-xs text-slate-400 block">Дата: --.--.2026</span>
+                            <span class="text-xs font-mono text-cyan-300">ID: MISSION-PASS-2026</span>
+                        </div>
+                    </div>
+
+                    <!-- Badge Icon -->
+                    <div id="reward-badge-container" class="inline-block p-4 rounded-full">
+                        <i id="reward-icon" class="fa-solid fa-trophy text-4xl md:text-5xl"></i>
+                    </div>
+
+                    <div>
+                        <h3 class="text-xl md:text-2xl font-black text-white">Вітаємо! Посадка на Землю Успішна!</h3>
+                        <p class="text-xs text-slate-300 mt-0.5">
+                            Пілот: <strong id="pdf-student-name" class="text-cyan-300">ПІБ</strong> | Навчальна група: <strong id="pdf-student-group" class="text-cyan-300">Група</strong>
+                        </p>
+                    </div>
+
+                    <!-- Score Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-xl mx-auto">
+                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-700 space-y-0.5">
+                            <span class="text-[10px] uppercase text-slate-400 font-semibold block">Накопичені бали</span>
+                            <span id="final-points" class="text-2xl font-black text-amber-400">0 / 120</span>
+                        </div>
+                        <div class="bg-slate-950/80 p-3 rounded-xl border border-slate-700 space-y-0.5">
+                            <span class="text-[10px] uppercase text-slate-400 font-semibold block">Офіційна оцінка (12-бальна)</span>
+                            <span id="final-grade" class="text-2xl font-black text-cyan-400">0 балів</span>
+                        </div>
+                    </div>
+
+                    <!-- Status Title -->
+                    <div class="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-cyan-950/70 p-3 rounded-xl border border-cyan-500/40 max-w-xl mx-auto">
+                        <span class="text-[10px] text-cyan-300 block uppercase font-bold tracking-wider mb-0.5">Присвоєний Космічний Статус</span>
+                        <span id="final-rank-title" class="text-base md:text-lg font-black text-white">Стажер</span>
+                    </div>
+
+                    <!-- Module Breakdown Table -->
+                    <div class="text-left space-y-1.5 text-xs text-slate-300 border-t border-slate-800 pt-3 max-w-xl mx-auto">
+                        <span class="font-bold text-slate-200 block mb-1">Деталізація накопичених балів по модулях:</span>
+                        <div id="module-breakdown-list" class="space-y-1.5">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Sync Status Box -->
+                    <div id="sync-status-box" class="p-2.5 bg-slate-950/90 rounded-xl border border-slate-700 text-xs flex items-center justify-center gap-2 text-slate-300 max-w-xl mx-auto">
+                        <i class="fa-solid fa-spinner fa-spin text-cyan-400"></i>
+                        <span>Відправка підсумків у Google Таблицю викладача...</span>
+                    </div>
+                </div>
+
+                <!-- User Controls Bar -->
+                <div class="flex flex-wrap justify-center gap-3 pt-1">
+                    <button type="button" onclick="downloadPDFReport()" class="py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 font-bold text-xs md:text-sm text-white transition-all flex items-center gap-2 shadow-lg glow-cyan">
+                        <i class="fa-solid fa-file-pdf text-base"></i>
+                        <span>Завантажити PDF-звіт для Google Classroom</span>
+                    </button>
+                    <button type="button" onclick="toggleLeaderboardModal(true)" class="py-3 px-5 rounded-xl bg-amber-600 hover:bg-amber-500 text-xs md:text-sm font-bold text-white transition-all flex items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-trophy"></i>
+                        <span>Рейтинг Переможців</span>
+                    </button>
+                </div>
+            </section>
+        </main>
+
+        <!-- Hidden Printable HTML Template for html2pdf.js generation -->
+        <div id="pdf-printable-wrapper" class="fixed -left-[9999px] -top-[9999px] opacity-0 pointer-events-none">
+            <div id="pdf-printable-area" style="padding: 20px; font-family: 'Inter', sans-serif; background-color: #ffffff; color: #0f172a; width: 750px; min-height: 1000px; box-sizing: border-box;">
+                <div style="border-bottom: 2px solid #0284c7; padding-bottom: 10px; margin-bottom: 12px; display: flex; justify-between; align-items: center;">
+                    <div>
+                        <h1 style="font-size: 16px; font-weight: 800; color: #0369a1; margin: 0;">Харківський машинобудівний фаховий коледж</h1>
+                        <p style="font-size: 11px; color: #475569; margin: 2px 0 0 0;">Бортовий звіт тематичної контрольної роботи з Астрономії (Теми 1–3)</p>
+                    </div>
+                    <div style="text-align: right; font-size: 10px; color: #64748b;">
+                        <div id="pdf-doc-date">Дата: 25.10.2026</div>
+                        <div style="font-family: monospace; font-weight: bold; color: #0284c7;">ID: PASS-ASTRO-2026</div>
+                    </div>
+                </div>
+
+                <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; padding: 10px; border-radius: 6px; margin-bottom: 12px;">
+                    <table style="width: 100%; font-size: 11px;">
+                        <tr>
+                            <td style="width: 50%;"><strong>Студент (ПІБ):</strong> <span id="pdf-doc-name" style="color: #0369a1;">-</span></td>
+                            <td style="width: 50%;"><strong>Група:</strong> <span id="pdf-doc-group" style="color: #0369a1;">-</span></td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top: 4px;"><strong>Накопичено балів:</strong> <span id="pdf-doc-score" style="color: #d97706; font-weight: bold;">0 / 120</span></td>
+                            <td style="padding-top: 4px;"><strong>Підсумкова оцінка:</strong> <span id="pdf-doc-grade" style="color: #0284c7; font-weight: bold;">0 балів</span></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3 style="font-size: 12px; font-weight: bold; color: #0f172a; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Детальний аналіз виконання питань за модулями:</h3>
+                
+                <div id="pdf-doc-questions-breakdown" style="font-size: 10px; line-height: 1.35;">
+                    <!-- Question details injected dynamically -->
+                </div>
+
+                <div style="margin-top: 15px; border-top: 1px solid #cbd5e1; padding-top: 6px; text-align: center; font-size: 9px; color: #94a3b8;">
+                    Звіт створено автоматично інтерактивною системою «Місія: Космічна Одісея» • Документ підлягає перевірці викладачем у Google Classroom.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="w-full glass-panel border-t border-slate-800 py-2 mt-2 text-center text-[11px] text-slate-500 rounded-xl">
+            <p>© 2026 Астрономічний Квест «Місія: Космічна Одісея» | ХМФК II курс</p>
+        </footer>
+    </div>
+
+    <!-- LEADERBOARD MODAL -->
+    <div id="modal-leaderboard" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div class="glass-panel max-w-2xl w-full p-5 rounded-2xl relative max-h-[85vh] flex flex-col space-y-3">
+            <button type="button" onclick="toggleLeaderboardModal(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center gap-2.5">
+                <i class="fa-solid fa-trophy text-xl text-amber-400"></i>
+                <h3 class="text-lg font-black text-white">Загальний Рейтинг Пілотів (II Курс)</h3>
+            </div>
+
+            <!-- Group Filter -->
+            <div class="flex justify-between items-center bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
+                <span class="text-xs text-slate-400">Фільтр за академічною групою:</span>
+                <select id="filter-leaderboard-group" onchange="renderLeaderboardTable()" class="bg-slate-800 border border-slate-700 text-xs text-cyan-300 rounded-lg px-2.5 py-1 focus:outline-none">
+                    <option value="ALL">Усі групи</option>
+                    <option value="ВД-201">ВД-201</option>
+                    <option value="ТЗТ-201">ТЗТ-201</option>
+                    <option value="ЗВ-201">ЗВ-201</option>
+                    <option value="МЕП-201">МЕП-201</option>
+                </select>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-y-auto flex-grow rounded-xl border border-slate-800">
+                <table class="w-full text-left text-xs text-slate-300">
+                    <thead class="bg-slate-900/95 text-slate-400 sticky top-0 uppercase text-[10px]">
+                        <tr>
+                            <th class="p-2.5">#</th>
+                            <th class="p-2.5">ПІБ Студента</th>
+                            <th class="p-2.5">Група</th>
+                            <th class="p-2.5 text-right">Бали (120)</th>
+                            <th class="p-2.5 text-right">Оцінка (12)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="leaderboard-tbody" class="divide-y divide-slate-800/60">
+                        <!-- Items rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex justify-between items-center">
+                <button type="button" onclick="clearLocalLeaderboard()" class="text-xs text-rose-400 hover:underline">
+                    <i class="fa-solid fa-trash"></i> Очистити локальні записи
+                </button>
+                <button type="button" onclick="toggleLeaderboardModal(false)" class="py-1.5 px-4 rounded-lg bg-slate-800 text-xs font-bold text-white hover:bg-slate-700">
+                    Закрити
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- UI TOAST -->
+    <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 border border-cyan-500/50 text-cyan-300 px-3.5 py-2.5 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-cyan-400 text-sm"></i>
+        <span id="toast-msg">Сповіщення</span>
+    </div>
+
+    <!-- APPLICATION CODE -->
+    <script>
+        /* ==================== GLOBAL CONFIGURATION ==================== */
+        const GOOGLE_SCRIPT_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbw25S-nZ7h0olDXuTR5A9aqhTfe-j8xicVOVRv6T7pqiYTsF0ziccQ440cYocA0vUcK/exec";
+
+        let currentUser = { name: '', group: '', mode: 'standard' };
+        let currentModuleIndex = 0;
+        let currentQuestionStep = 0;
+        let totalScore = 0;
+        let moduleScores = [0, 0, 0, 0];
+        let userAnswersLog = {};
+        let questionTimerInterval = null;
+        let currentTimerSeconds = 90;
+
+        /* Fisher-Yates Shuffle array */
+        function shuffleArray(array) {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        /* Helper to get clean options once without reshuffling on re-renders */
+        function getQuestionOptions(q) {
+            if (!q._shuffledOpts && q.options) {
+                q._shuffledOpts = shuffleArray(q.options);
+            }
+            return q._shuffledOpts || q.options;
+        }
+
+        /* Helper to calculate current module score dynamically */
+        function calculateCurrentModuleScore(mIdx) {
+            const moduleData = MODULES_DATA[mIdx];
+            let score = 0;
+
+            moduleData.questions.forEach(q => {
+                const userAns = userAnswersLog[q.id];
+
+                if (q.type === 'radio') {
+                    if (userAns && userAns === q.correct) {
+                        score += q.points;
+                    }
+                } else if (q.type === 'matching') {
+                    let allMatched = true;
+                    if (userAns) {
+                        q.pairs.forEach(pair => {
+                            if (userAns[pair.key] !== pair.correctVal) allMatched = false;
+                        });
+                    } else {
+                        allMatched = false;
+                    }
+                    if (allMatched) score += q.points;
+                }
+            });
+
+            return score;
+        }
+
+        /* Helper to recalculate and refresh header total score display */
+        function updateLiveTotalScore() {
+            moduleScores[currentModuleIndex] = calculateCurrentModuleScore(currentModuleIndex);
+            totalScore = moduleScores.reduce((acc, curr) => acc + curr, 0);
+            document.getElementById('current-score').textContent = `${totalScore} / 120`;
+        }
+
+        /* ==================== ACADEMIC QUESTION DATABASE (TEMAS 1-3) ==================== */
+        const MODULES_DATA = [
+            {
+                id: 1,
+                title: "Модуль 1. Навігаційний (Небесна сфера, координати та час)",
+                maxPoints: 30,
+                waypointPos: { x: 230, y: 35 },
+                questions: [
+                    {
+                        id: "q1_1",
+                        points: 10,
+                        text: "1. Встановити відповідність між точками/лініями небесної сфери та їх науковими геометричними визначеннями:",
+                        type: "matching",
+                        pairs: [
+                            { key: "1", label: "Зеніт", correctVal: "a", opts: [
+                                {v:"a", t:"Точка небесної сфери безпосередньо над головою спостерігача"},
+                                {v:"b", t:"Велике коло, по якому Сонце здійснює свій видимий річний рух"},
+                                {v:"c", t:"Точка, протилежна зеніту (прямо під ногами спостерігача)"}
+                            ] },
+                            { key: "2", label: "Надир", correctVal: "c", opts: [
+                                {v:"a", t:"Точка небесної сфери безпосередньо над головою спостерігача"},
+                                {v:"b", t:"Велике коло, по якому Сонце здійснює свій видимий річний рух"},
+                                {v:"c", t:"Точка, протилежна зеніту (прямо під ногами спостерігача)"}
+                            ] },
+                            { key: "3", label: "Екліптика", correctVal: "b", opts: [
+                                {v:"a", t:"Точка небесної сфери безпосередньо над головою спостерігача"},
+                                {v:"b", t:"Велике коло, по якому Сонце здійснює свій видимий річний рух"},
+                                {v:"c", t:"Точка, протилежна зеніту (прямо під ногами спостерігача)"}
+                            ] }
+                        ]
+                    },
+                    {
+                        id: "q1_2",
+                        points: 10,
+                        text: "2. Розрахунок освітленості за формулою Погсона: У скільки разів зоря 1-ї зоряної величини (1m) яскравіша за зоряне світило 6-ї зоряної величини (6m)?",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "У 5 разів" },
+                            { val: "b", text: "Рівно в 10 разів" },
+                            { val: "c", text: "У 100 разів" },
+                            { val: "d", text: "У 1000 разів" }
+                        ],
+                        correct: "c"
+                    },
+                    {
+                        id: "q1_3",
+                        points: 10,
+                        text: "3. Визначення відстаней в астрономії: Яка географічна широта φ спостерігача, якщо Полярна зоря знаходиться над горизонтом під кутом h = 50°?",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Широта φ = 40° північної широти" },
+                            { val: "b", text: "Широта φ = 50° північної широти" },
+                            { val: "c", text: "Широта φ = 90° (Північний полюс)" },
+                            { val: "d", text: "Широта φ = 0° (Екватор)" }
+                        ],
+                        correct: "b"
+                    }
+                ]
+            },
+            {
+                id: 2,
+                title: "Модуль 2. Обсерваторія (Методи та засоби астрономічних досліджень)",
+                maxPoints: 30,
+                waypointPos: { x: 430, y: 55 },
+                questions: [
+                    {
+                        id: "q2_1",
+                        points: 10,
+                        text: "1. Вкажіть принципову конструктивну відмінність між оптичними телескопами-рефракторами та телескопами-рефлекторами:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Рефрактори використовують дзеркала, а рефлектори — скляні лінзи." },
+                            { val: "b", text: "Рефрактори використовують скляні лінзи для заломлення світла, а рефлектори — увігнуті дзеркала." },
+                            { val: "c", text: "Рефлектори призначені виключно для спостереження Сонця вдень." },
+                            { val: "d", text: "Рефрактори будуються лише для радіодіапазону електромагнітних хвиль." }
+                        ],
+                        correct: "b"
+                    },
+                    {
+                        id: "q2_2",
+                        points: 10,
+                        text: "2. Розрахунок оптичного збільшення телескопа: Фокусна відстань об'єктива F = 1200 мм, а фокусна відстань окуляра f = 10 мм. Обчислити збільшення Г:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "120-кратне збільшення" },
+                            { val: "b", text: "12-кратне збільшення" },
+                            { val: "c", text: "1200-кратне збільшення" },
+                            { val: "d", text: "60-кратне збільшення" }
+                        ],
+                        correct: "a"
+                    },
+                    {
+                        id: "q2_3",
+                        points: 10,
+                        text: "3. Головна причина виведення потужних телескопів (наприклад, «Джеймс Вебб») у відкритий космічний простір:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Атмосфера Землі поглинає інфрачервоне випромінювання та створює теплові турбулентні викривлення зображення" },
+                            { val: "b", text: "У космосі повністю відсутнє гравітаційне тяжіння Сонця" },
+                            { val: "c", text: "Для запуску телескопа в космосі не потрібні сонячні батареї" },
+                            { val: "d", text: "Щоб уникнути фізичного зіткнення телескопа з атмосферними хмарами" }
+                        ],
+                        correct: "a"
+                    }
+                ]
+            },
+            {
+                id: 3,
+                title: "Модуль 3. Орбітальна Механіка (Закони руху та конфігурації планет)",
+                maxPoints: 30,
+                waypointPos: { x: 630, y: 75 },
+                questions: [
+                    {
+                        id: "q3_1",
+                        points: 10,
+                        text: "1. 3-й закон Кеплера: Астероїд знаходиться на середній відстані a = 4 а.о. від Сонця. Обчислити період його обертання T у земних роках:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "T = 4 роки" },
+                            { val: "b", text: "T = 8 років" },
+                            { val: "c", text: "T = 16 років" },
+                            { val: "d", text: "T = 64 роки" }
+                        ],
+                        correct: "b"
+                    },
+                    {
+                        id: "q3_2",
+                        points: 10,
+                        text: "2. Згідно з Другим законом Кеплера (законом площ), орбітальна швидкість руху планети по еліпсу є найвищою:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "У перигелії (найближчій точці орбіти до Сонця)" },
+                            { val: "b", text: "У афелії (найвіддаленішій точці орбіти від Сонця)" },
+                            { val: "c", text: "Швидкість є однаковою в усіх точках орбіти" },
+                            { val: "d", text: "Лише у момент максимальної східної елонгації" }
+                        ],
+                        correct: "a"
+                    },
+                    {
+                        id: "q3_3",
+                        points: 10,
+                        text: "3. Геометрія Сонячної системи: Чому сонячні та місячні затемнення не відбуваються щомісяця під час кожної фази Нового або Повного Місяця?",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Площина орбіти Місяця нахилена до площини екліптики під кутом близько 5°" },
+                            { val: "b", text: "Орбіта Місяця обертається у зворотному напрямку відносно обертання Землі" },
+                            { val: "c", text: "Місяць знаходиться занадто далеко від Землі для відкидання тіні" },
+                            { val: "d", text: "Затемнення можуть відбуватися лише на екваторі Землі" }
+                        ],
+                        correct: "a"
+                    }
+                ]
+            },
+            {
+                id: 4,
+                title: "Модуль 4. Сканер Планетарної системи (Планети та малі тіла)",
+                maxPoints: 30,
+                waypointPos: { x: 740, y: 40 },
+                questions: [
+                    {
+                        id: "q4_1",
+                        points: 10,
+                        text: "1. Фізична класифікація планет Сонячної системи: Оберіть науково правильну відповідність властивостей двох груп планет:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Планети земної групи мають тверду поверхню та високу щільність, а планети-гіганти складаються з газів і мають кільця." },
+                            { val: "b", text: "Планети земної групи складаються з газового водню, а планети-гіганти мають тверду поверхню з металів." },
+                            { val: "c", text: "Планети-гіганти знаходяться найближче до Сонця, а планети земної групи — на периферії." },
+                            { val: "d", text: "Усі планети Сонячної системи мають абсолютно однакову щільність та однаковий склад атмосфери." }
+                        ],
+                        correct: "a"
+                    },
+                    {
+                        id: "q4_2",
+                        points: 10,
+                        text: "2. Малі тіла Сонячної системи: Вкажіть принципову відмінність між кометою та метеором:",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "Комета — це крижане тіло з хвостом при наближенні до Сонця, а метеор — світловий спалах від згорання частинки в атмосфері." },
+                            { val: "b", text: "Комета є кам'яним астероїдом у поясі між Марсом і Юпітером, а метеор — це супутник Юпітера." },
+                            { val: "c", text: "Метеор є крижаним ядром за орбітою Нептуна, а комета — явище у верхніх шарах тропосфери." },
+                            { val: "d", text: "Комета і метеор — абсолютно однакові за фізичною природою об'єкти без відмінностей." }
+                        ],
+                        correct: "a"
+                    },
+                    {
+                        id: "q4_3",
+                        points: 10,
+                        text: "3. Фізика планетних атмосфер та периферія: Чому середня температура Венери вища ніж у Меркурія, і що таке Пояс Койпера?",
+                        type: "radio",
+                        options: [
+                            { val: "a", text: "На Венері діє потужний парниковий ефект через CO2, а Пояс Койпера — область крижаних тіл за орбітою Нептуна." },
+                            { val: "b", text: "Венера ближча до Сонця ніж Меркурій, а Пояс Койпера розташований між Марсом та Юпітером." },
+                            { val: "c", text: "Венера підігрівається внутрішнім ядерним синтезом, а Пояс Койпера складається із зоряних скупчень." },
+                            { val: "d", text: "Температура Венери є нижчою за Меркурій через повну відсутність атмосфери." }
+                        ],
+                        correct: "a"
+                    }
+                ]
+            }
+        ];
+
+        /* ==================== CANVAS STARFIELD ==================== */
+        const canvas = document.getElementById('starfield');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initStars();
+        }
+
+        function initStars() {
+            stars = [];
+            const count = Math.floor((canvas.width * canvas.height) / 2400);
+            for (let i = 0; i < count; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1.5 + 0.4,
+                    alpha: Math.random(),
+                    speed: Math.random() * 0.02 + 0.005
+                });
+            }
+        }
+
+        function animateStars() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(star => {
+                star.alpha += star.speed;
+                if (star.alpha > 1 || star.alpha < 0) star.speed = -star.speed;
+                ctx.fillStyle = `rgba(255, 255, 255, ${Math.abs(star.alpha)})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(animateStars);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        animateStars();
+
+        /* ==================== REGISTRATION & GAME MODES ==================== */
+        function selectGameMode(mode) {
+            currentUser.mode = mode;
+            const cardStd = document.getElementById('mode-card-standard');
+            const cardTA = document.getElementById('mode-card-timeattack');
+            const iconStd = document.getElementById('radio-icon-standard');
+            const iconTA = document.getElementById('radio-icon-timeattack');
+
+            if (mode === 'standard') {
+                cardStd.classList.add('active');
+                cardTA.classList.remove('active');
+                iconStd.className = "fa-solid fa-circle-dot text-cyan-400 text-sm";
+                iconTA.className = "fa-regular fa-circle text-slate-500 text-sm";
+            } else {
+                cardTA.classList.add('active');
+                cardStd.classList.remove('active');
+                iconTA.className = "fa-solid fa-circle-dot text-amber-400 text-sm";
+                iconStd.className = "fa-regular fa-circle text-slate-500 text-sm";
+            }
+        }
+
+        function startMission() {
+            const nameInput = document.getElementById('input-fullname').value.trim();
+            const groupInput = document.getElementById('input-group').value;
+
+            if (!nameInput || !groupInput) {
+                showToast("Будь ласка, введіть ПІБ та оберіть групу!", "fa-circle-exclamation");
+                return;
+            }
+
+            currentUser.name = nameInput;
+            currentUser.group = groupInput;
+
+            document.getElementById('user-display-name').textContent = currentUser.name;
+            document.getElementById('user-display-group').textContent = `Група: ${currentUser.group}`;
+            
+            const pillBadge = document.getElementById('mode-pill-badge');
+            pillBadge.classList.remove('hidden');
+            if (currentUser.mode === 'timeattack') {
+                pillBadge.textContent = "TIME ATTACK";
+                pillBadge.className = "text-[9px] uppercase px-2 py-0.5 rounded font-bold border border-amber-500/50 bg-amber-500/20 text-amber-300";
+            } else {
+                pillBadge.textContent = "СТАНДАРТ";
+                pillBadge.className = "text-[9px] uppercase px-2 py-0.5 rounded font-bold border border-cyan-500/50 bg-cyan-500/20 text-cyan-300";
+            }
+
+            document.getElementById('header-user-badge').classList.remove('hidden');
+            document.getElementById('screen-registration').classList.add('hidden');
+            document.getElementById('screen-game').classList.remove('hidden');
+
+            currentModuleIndex = 0;
+            currentQuestionStep = 0;
+            totalScore = 0;
+            moduleScores = [0, 0, 0, 0];
+            userAnswersLog = {};
+
+            loadModule(0);
+            showToast("Курс прокладено! Запуск систем місії...", "fa-rocket");
+        }
+
+        /* ==================== MAP & NAVIGATION ==================== */
+        function moveSpaceship(x, y) {
+            const ship = document.getElementById('spaceship-icon');
+            ship.setAttribute('transform', `translate(${x},${y})`);
+        }
+
+        function startQuestionTimer() {
+            clearInterval(questionTimerInterval);
+            if (currentUser.mode !== 'timeattack') return;
+
+            const timerBox = document.getElementById('timer-box');
+            const timerSecs = document.getElementById('timer-seconds');
+            timerBox.classList.remove('hidden');
+            currentTimerSeconds = 90;
+            timerSecs.textContent = currentTimerSeconds;
+
+            questionTimerInterval = setInterval(() => {
+                currentTimerSeconds--;
+                timerSecs.textContent = currentTimerSeconds;
+                if (currentTimerSeconds <= 0) {
+                    clearInterval(questionTimerInterval);
+                    showToast("Час модуля вичерпано! Перехід далі...", "fa-clock");
+                    submitCurrentModule();
+                }
+            }, 1000);
+        }
+
+        function loadModule(index) {
+            const moduleData = MODULES_DATA[index];
+            currentQuestionStep = 0;
+
+            document.getElementById('module-badge').textContent = `МОДУЛЬ ${index + 1} / 4`;
+            document.getElementById('module-title').textContent = moduleData.title;
+            document.getElementById('current-station-title').textContent = `Локація: ${moduleData.title.split('(')[1]?.replace(')', '') || moduleData.title}`;
+
+            // Map circles update
+            moveSpaceship(moduleData.waypointPos.x, moduleData.waypointPos.y);
+            for (let i = 1; i <= 4; i++) {
+                const circle = document.getElementById(`st-circle-${i}`);
+                if (i <= index) {
+                    circle.setAttribute('fill', '#38bdf8');
+                    circle.setAttribute('stroke', '#38bdf8');
+                } else {
+                    circle.setAttribute('fill', '#0f172a');
+                    circle.setAttribute('stroke', '#64748b');
+                }
+            }
+
+            renderCurrentQuestionStep();
+            startQuestionTimer();
+        }
+
+        /* Render Single Question Page (Step-by-Step) */
+        function renderCurrentQuestionStep() {
+            const moduleData = MODULES_DATA[currentModuleIndex];
+            const q = moduleData.questions[currentQuestionStep];
+            const totalQ = moduleData.questions.length;
+
+            // Update Progress & Indicators
+            document.getElementById('question-step-indicator').textContent = `Питання ${currentQuestionStep + 1} з ${totalQ}`;
+            const progressPct = ((currentQuestionStep + 1) / totalQ) * 100;
+            document.getElementById('question-progress-bar').style.width = `${progressPct}%`;
+
+            // Navigation Buttons Text
+            const prevBtn = document.getElementById('btn-prev-question');
+            const nextText = document.getElementById('btn-next-text');
+            const nextIcon = document.getElementById('btn-next-icon');
+
+            prevBtn.style.visibility = currentQuestionStep === 0 ? 'hidden' : 'visible';
+
+            if (currentQuestionStep === totalQ - 1) {
+                if (currentModuleIndex === MODULES_DATA.length - 1) {
+                    nextText.textContent = "Фінішувати та завершити місію";
+                    nextIcon.className = "fa-solid fa-flag-checkered";
+                } else {
+                    nextText.textContent = "Зафіксувати відповіді модуля";
+                    nextIcon.className = "fa-solid fa-chevron-right";
+                }
+            } else {
+                nextText.textContent = "Наступне питання";
+                nextIcon.className = "fa-solid fa-arrow-right";
+            }
+
+            // Container Render
+            const container = document.getElementById('question-step-container');
+            container.innerHTML = '';
+
+            const qDiv = document.createElement('div');
+            qDiv.className = 'bg-slate-900/80 p-4 rounded-xl border border-slate-800 space-y-3';
+
+            let optionsHtml = '';
+
+            if (q.type === 'radio') {
+                const qOpts = getQuestionOptions(q);
+                optionsHtml = qOpts.map(opt => `
+                    <label class="option-card flex items-start gap-3 p-3 rounded-xl border border-slate-700/60 bg-slate-800/40 cursor-pointer">
+                        <input type="radio" name="${q.id}" value="${opt.val}" class="mt-0.5 text-cyan-400 focus:ring-cyan-400 scale-110">
+                        <span class="text-xs text-slate-200 leading-relaxed">${opt.text}</span>
+                    </label>
+                `).join('');
+            } else if (q.type === 'matching') {
+                optionsHtml = q.pairs.map(pair => {
+                    if (!pair._shuffledOpts) {
+                        pair._shuffledOpts = shuffleArray(pair.opts);
+                    }
+                    return `
+                        <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-slate-800/40 rounded-xl border border-slate-700/60">
+                            <span class="text-xs text-slate-200 font-semibold">${pair.key}. ${pair.label}</span>
+                            <select name="${q.id}_${pair.key}" class="bg-slate-900 border border-slate-700 text-xs text-cyan-300 rounded-lg p-2 focus:outline-none focus:border-cyan-400 max-w-md w-full md:w-auto">
+                                <option value="">Оберіть відповідність...</option>
+                                ${pair._shuffledOpts.map(o => `<option value="${o.v}">${o.t}</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            qDiv.innerHTML = `
+                <div class="flex justify-between items-start gap-2 border-b border-slate-800/80 pb-2">
+                    <h4 class="text-xs md:text-sm font-bold text-slate-100 leading-relaxed">${q.text}</h4>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 whitespace-nowrap">+${q.points} б</span>
+                </div>
+                <div class="space-y-2.5 mt-2">${optionsHtml}</div>
+            `;
+
+            container.appendChild(qDiv);
+
+            // Restore pre-selected values if user navigated back
+            if (userAnswersLog[q.id]) {
+                const prev = userAnswersLog[q.id];
+                if (q.type === 'radio') {
+                    const radio = container.querySelector(`input[value="${prev}"]`);
+                    if (radio) radio.checked = true;
+                } else if (q.type === 'matching') {
+                    q.pairs.forEach(pair => {
+                        const sel = container.querySelector(`select[name="${q.id}_${pair.key}"]`);
+                        if (sel && prev[pair.key]) sel.value = prev[pair.key];
+                    });
+                }
+            }
+        }
+
+        /* Save choice of current question */
+        function saveCurrentQuestionInput() {
+            const moduleData = MODULES_DATA[currentModuleIndex];
+            const q = moduleData.questions[currentQuestionStep];
+
+            if (q.type === 'radio') {
+                const sel = document.querySelector(`input[name="${q.id}"]:checked`);
+                userAnswersLog[q.id] = sel ? sel.value : null;
+            } else if (q.type === 'matching') {
+                let pairMap = {};
+                q.pairs.forEach(pair => {
+                    const sel = document.querySelector(`select[name="${q.id}_${pair.key}"]`);
+                    if (sel) pairMap[pair.key] = sel.value;
+                });
+                userAnswersLog[q.id] = pairMap;
+            }
+        }
+
+        function navigateQuestionStep(direction) {
+            saveCurrentQuestionInput();
+            
+            // Instantly update live score display when user moves between questions
+            updateLiveTotalScore();
+
+            const moduleData = MODULES_DATA[currentModuleIndex];
+            const totalQ = moduleData.questions.length;
+
+            if (direction === 1) {
+                if (currentQuestionStep < totalQ - 1) {
+                    currentQuestionStep++;
+                    renderCurrentQuestionStep();
+                } else {
+                    submitCurrentModule();
+                }
+            } else if (direction === -1) {
+                if (currentQuestionStep > 0) {
+                    currentQuestionStep--;
+                    renderCurrentQuestionStep();
+                }
+            }
+        }
+
+        function submitCurrentModule() {
+            clearInterval(questionTimerInterval);
+            saveCurrentQuestionInput();
+
+            let moduleScore = calculateCurrentModuleScore(currentModuleIndex);
+
+            if (currentUser.mode === 'timeattack' && moduleScore > 0) {
+                if (currentTimerSeconds > 60) moduleScore += 3;
+                else if (currentTimerSeconds > 30) moduleScore += 1;
+            }
+
+            moduleScores[currentModuleIndex] = moduleScore;
+            
+            // Recalculate global score properly across all answered modules
+            totalScore = moduleScores.reduce((acc, curr) => acc + curr, 0);
+            document.getElementById('current-score').textContent = `${totalScore} / 120`;
+
+            if (currentModuleIndex < MODULES_DATA.length - 1) {
+                currentModuleIndex++;
+                loadModule(currentModuleIndex);
+                showToast(`Модуль ${currentModuleIndex} завершено! Перехід на наступну станцію...`, "fa-circle-check");
+            } else {
+                moveSpaceship(850, 55);
+                setTimeout(showFinalResultsScreen, 1200);
+            }
+        }
+
+        /* ==================== FINAL RESULTS SCREEN ==================== */
+        function calculateAcademicGrade(pts) {
+            return Math.min(12, Math.max(1, Math.round(pts / 10)));
+        }
+
+        function getRankDetails(grade) {
+            if (grade >= 11) return { title: "Адмірал Космічного Флоту", color: "text-amber-400", bg: "bg-amber-500/20 border-amber-500/50", icon: "fa-trophy" };
+            if (grade >= 9) return { title: "Капітан I рангу", color: "text-cyan-400", bg: "bg-cyan-500/20 border-cyan-500/50", icon: "fa-award" };
+            if (grade >= 7) return { title: "Пілот-Дослідник", color: "text-indigo-400", bg: "bg-indigo-500/20 border-indigo-500/50", icon: "fa-compass" };
+            if (grade >= 5) return { title: "Кадет-Навігатор", color: "text-slate-300", bg: "bg-slate-700/40 border-slate-600", icon: "fa-user-astronaut" };
+            return { title: "Стажер на перепідготовку", color: "text-rose-400", bg: "bg-rose-500/20 border-rose-500/50", icon: "fa-wrench" };
+        }
+
+        function showFinalResultsScreen() {
+            document.getElementById('screen-game').classList.add('hidden');
+            document.getElementById('screen-results').classList.remove('hidden');
+
+            const finalGrade = calculateAcademicGrade(totalScore);
+            const rank = getRankDetails(finalGrade);
+
+            document.getElementById('pdf-student-name').textContent = currentUser.name;
+            document.getElementById('pdf-student-group').textContent = currentUser.group;
+            document.getElementById('pdf-report-date').textContent = `Дата: ${new Date().toLocaleDateString('uk-UA')}`;
+
+            document.getElementById('final-points').textContent = `${totalScore} / 120`;
+            document.getElementById('final-grade').textContent = `${finalGrade} балів`;
+            document.getElementById('final-rank-title').textContent = rank.title;
+            document.getElementById('final-rank-title').className = `text-base md:text-lg font-black ${rank.color}`;
+
+            const rewardContainer = document.getElementById('reward-badge-container');
+            rewardContainer.className = `inline-block p-4 rounded-full border ${rank.bg} glow-gold`;
+            document.getElementById('reward-icon').className = `fa-solid ${rank.icon} text-4xl md:text-5xl ${rank.color}`;
+
+            // Render Module Breakdown
+            const breakdownContainer = document.getElementById('module-breakdown-list');
+            breakdownContainer.innerHTML = '';
+
+            MODULES_DATA.forEach((mod, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex justify-between items-center p-2.5 bg-slate-950/60 rounded-xl border border-slate-800";
+                row.innerHTML = `
+                    <span class="font-semibold text-slate-300 text-xs">${mod.title}</span>
+                    <span class="font-bold text-amber-400 text-xs">${moduleScores[idx]} / ${mod.maxPoints} б</span>
+                `;
+                breakdownContainer.appendChild(row);
+            });
+
+            // Save to LocalStorage
+            saveAttemptToLocalStorage(currentUser.name, currentUser.group, totalScore, finalGrade);
+
+            // Send to Google WebApp
+            sendResultsToGoogleSheets(currentUser.name, currentUser.group, moduleScores, totalScore, finalGrade);
+        }
+
+        /* Send Results via POST to Google Apps Script Web App */
+        function sendResultsToGoogleSheets(fullName, group, mScores, score, grade) {
+            const statusBox = document.getElementById('sync-status-box');
+
+            if (!GOOGLE_SCRIPT_WEBAPP_URL || GOOGLE_SCRIPT_WEBAPP_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) {
+                statusBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> <span>Результат збережено локально (URL Гугл Таблиці не налаштовано)</span>`;
+                return;
+            }
+
+            const payload = {
+                fullName: fullName,
+                group: group,
+                m1: mScores[0],
+                m2: mScores[1],
+                m3: mScores[2],
+                m4: mScores[3],
+                totalScore: score,
+                finalGrade: grade
+            };
+
+            fetch(GOOGLE_SCRIPT_WEBAPP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+            .then(() => {
+                statusBox.className = "p-2.5 bg-emerald-950/80 rounded-xl border border-emerald-500/40 text-xs flex items-center justify-center gap-2 text-emerald-300 max-w-xl mx-auto";
+                statusBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> <span>Результати успішно відправлено у Google Таблицю викладача!</span>`;
+            })
+            .catch(err => {
+                statusBox.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-400"></i> <span>Помилка відправки у таблицю. Збережено в локальному журналі.</span>`;
+            });
+        }
+
+        /* ==================== PDF EXPORT FOR GOOGLE CLASSROOM ==================== */
+        function downloadPDFReport() {
+            showToast("Формуємо деталізований PDF-звіт...", "fa-file-pdf");
+
+            // Populate printable PDF area
+            document.getElementById('pdf-doc-name').textContent = currentUser.name;
+            document.getElementById('pdf-doc-group').textContent = currentUser.group;
+            document.getElementById('pdf-doc-date').textContent = `Дата: ${new Date().toLocaleDateString('uk-UA')}`;
+            document.getElementById('pdf-doc-score').textContent = `${totalScore} / 120 балів`;
+            document.getElementById('pdf-doc-grade').textContent = `${calculateAcademicGrade(totalScore)} балів`;
+
+            // Question-by-question breakdown inside PDF
+            const pdfBreakdown = document.getElementById('pdf-doc-questions-breakdown');
+            let breakdownHtml = '';
+
+            MODULES_DATA.forEach((mod, mIdx) => {
+                breakdownHtml += `<div style="font-weight: bold; color: #0369a1; margin-top: 6px; margin-bottom: 3px; font-size: 11px; border-bottom: 1px dashed #cbd5e1; padding-bottom: 2px;">${mod.title} (Отримано: ${moduleScores[mIdx]} / ${mod.maxPoints} б)</div>`;
+                
+                mod.questions.forEach((q) => {
+                    const userAns = userAnswersLog[q.id];
+                    let isCorrect = false;
+
+                    if (q.type === 'radio') {
+                        isCorrect = (userAns === q.correct);
+                    } else if (q.type === 'matching') {
+                        let matched = true;
+                        if (userAns) {
+                            q.pairs.forEach(p => { if (userAns[p.key] !== p.correctVal) matched = false; });
+                        } else matched = false;
+                        isCorrect = matched;
+                    }
+
+                    const statusIcon = isCorrect ? '<span style="color: #16a34a; font-weight: bold;">[ВІРНО]</span>' : '<span style="color: #dc2626; font-weight: bold;">[ПОМИЛКА]</span>';
+
+                    breakdownHtml += `
+                        <div style="margin-left: 6px; margin-bottom: 3px; border-bottom: 1px dotted #e2e8f0; padding-bottom: 2px;">
+                            <div><strong>${q.text}</strong> ${statusIcon}</div>
+                        </div>
+                    `;
+                });
+            });
+
+            pdfBreakdown.innerHTML = breakdownHtml;
+
+            const element = document.getElementById('pdf-printable-area');
+            
+            const opt = {
+                margin:       0,
+                filename:     `Звіт_Астрономія_${currentUser.group}_${currentUser.name.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', scrollX: 0, scrollY: 0 },
+                jsPDF:        { unit: 'pt', format: 'a4', orientation: 'portrait' }
+            };
+
+            html2pdf().set(opt).from(element).save().then(() => {
+                showToast("PDF-звіт завантажено! Прикріпіть його у Google Classroom.", "fa-circle-check");
+            });
+        }
+
+        /* ==================== LOCALSTORAGE & LEADERBOARD ==================== */
+        function getSavedLeaderboard() {
+            try {
+                return JSON.parse(localStorage.getItem('space_quest_2course_results') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function saveAttemptToLocalStorage(name, group, score, grade) {
+            const records = getSavedLeaderboard();
+            records.push({
+                name,
+                group,
+                score,
+                grade,
+                date: new Date().toLocaleDateString('uk-UA')
+            });
+            records.sort((a, b) => b.score - a.score);
+            localStorage.setItem('space_quest_2course_results', JSON.stringify(records));
+        }
+
+        function renderLeaderboardTable() {
+            const records = getSavedLeaderboard();
+            const filterGroup = document.getElementById('filter-leaderboard-group').value;
+            const tbody = document.getElementById('leaderboard-tbody');
+            tbody.innerHTML = '';
+
+            const filtered = filterGroup === 'ALL' ? records : records.filter(r => r.group === filterGroup);
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">Записів у цій категорії поки що немає</td></tr>`;
+                return;
+            }
+
+            filtered.forEach((rec, idx) => {
+                const tr = document.createElement('tr');
+                tr.className = idx % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-800/30';
+                tr.innerHTML = `
+                    <td class="p-2.5 font-bold text-slate-400">${idx + 1}</td>
+                    <td class="p-2.5 font-semibold text-slate-200">${rec.name}</td>
+                    <td class="p-2.5 text-slate-400">${rec.group}</td>
+                    <td class="p-2.5 text-right font-black text-amber-400">${rec.score}</td>
+                    <td class="p-2.5 text-right font-bold text-cyan-400">${rec.grade}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function toggleLeaderboardModal(show) {
+            const modal = document.getElementById('modal-leaderboard');
+            if (show) {
+                renderLeaderboardTable();
+                modal.classList.remove('hidden');
+            } else {
+                modal.classList.add('hidden');
+            }
+        }
+
+        function clearLocalLeaderboard() {
+            if (confirm("Ви дійсно бажаєте очистити локальну таблицю лідерів на цьому пристрої?")) {
+                localStorage.removeItem('space_quest_2course_results');
+                renderLeaderboardTable();
+                showToast("Локальні дані успішно очищено!", "fa-trash");
+            }
+        }
+
+        function showToast(message, iconClass = "fa-circle-check") {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = message;
+            toastIcon.className = `fa-solid ${iconClass} text-cyan-400 text-sm`;
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3500);
+        }
+    </script>
+</body>
+</html>
